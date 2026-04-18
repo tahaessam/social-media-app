@@ -1,11 +1,27 @@
 import { Request, Response, NextFunction } from "express";
-import { signupSchema, loginSchema } from "./user.validation.js";
+import bcrypt from "bcryptjs";
+import jwt from "jsonwebtoken";
+import crypto from "crypto";
 import { ZodError } from "zod";
+import UserRepo from "./user.repo";
+import EmailService from "../../utils/email.service";
+import RedisService from "../../utils/redis.service";
+import {
+  signupSchema,
+  loginSchema,
+  updatePasswordSchema,
+  forgetPasswordSchema,
+  resetPasswordSchema,
+  confirmEmailSchema,
+} from "./user.validation";
 
 class UserService {
-  constructor() {}
+  private userRepo: UserRepo;
 
-  // Helper method to format Zod errors
+  constructor() {
+    this.userRepo = new UserRepo();
+  }
+
   private formatValidationError(error: ZodError) {
     return error.issues.map((issue: any) => ({
       field: issue.path.join("."),
@@ -13,26 +29,68 @@ class UserService {
     }));
   }
 
+  private generateToken(userId: string) {
+    return jwt.sign({ userId }, process.env.JWT_SECRET!, { expiresIn: "7d" });
+  }
+
   signup = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
-      // Validate request body against schema
       const validatedData = signupSchema.parse(req.body);
+      const hashedPassword = await bcrypt.hash(validatedData.password, 10);
+      const verificationToken = crypto.randomBytes(32).toString("hex");
 
-      // TODO: حفظ المستخدم في قاعدة البيانات
-      // const user = await User.create(validatedData);
+      const user = await this.userRepo.create({
+        ...validatedData,
+        password: hashedPassword,
+        verificationToken,
+      });
+
+      await EmailService.sendEmail(
+        user.email,
+        "Verify your email",
+        `Click here to verify: ${process.env.BASE_URL}/auth/confirm-email?token=${verificationToken}`
+      );
 
       res.status(201).json({
-        message: "تم التسجيل بنجاح",
-        data: {
-          email: validatedData.email,
-          fullName: validatedData.fullName,
-          // token: generateToken(user._id),
-        },
+        message: "User registered successfully. Please check your email to verify.",
+        data: { email: user.email, fullName: user.fullName },
       });
     } catch (error) {
       if (error instanceof ZodError) {
         res.status(400).json({
-          message: "خطأ في التحقق من البيانات",
+          message: "Validation error",
+          errors: this.formatValidationError(error),
+        });
+        return;
+      }
+      if ((error as any).code === 11000) {
+        res.status(409).json({ message: "Email already exists" });
+        return;
+      }
+      next(error);
+    }
+  };
+
+  confirmEmail = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const { token } = confirmEmailSchema.parse(req.body);
+      const user = await this.userRepo.findOne({ verificationToken: token });
+      if (!user) {
+        const error = new Error("Invalid token");
+        (error as any).statusCode = 400;
+        next(error);
+        return;
+      }
+
+      user.isVerified = true;
+      user.verificationToken = undefined;
+      await user.save();
+
+      res.json({ message: "Email verified successfully" });
+    } catch (error) {
+      if (error instanceof ZodError) {
+        res.status(400).json({
+          message: "Validation error",
           errors: this.formatValidationError(error),
         });
         return;
@@ -43,25 +101,139 @@ class UserService {
 
   login = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
-      // Validate request body against schema
-      const validatedData = loginSchema.parse(req.body);
+      const { email, password } = loginSchema.parse(req.body);
+      const user = await this.userRepo.findOne({ email });
+      if (!user || !(await bcrypt.compare(password, user.password))) {
+        const error = new Error("Invalid credentials");
+        (error as any).statusCode = 401;
+        next(error);
+        return;
+      }
+      if (!user.isVerified) {
+        const error = new Error("Please verify your email first");
+        (error as any).statusCode = 403;
+        next(error);
+        return;
+      }
 
-      // TODO: البحث عن المستخدم وتحقق من كلمة المرور
-      // const user = await User.findOne({ email: validatedData.email });
-      // if (!user || !user.matchPassword(validatedData.password))
-      //   return res.status(401).json({ message: "بيانات غير صحيحة" });
+      const token = this.generateToken(user._id.toString());
+      // await RedisService.set(`session:${user._id}`, token, 604800);
 
       res.json({
-        message: "تم تسجيل الدخول بنجاح",
-        data: {
-          email: validatedData.email,
-          // token: generateToken(user._id),
-        },
+        message: "Login successful",
+        data: { email: user.email, fullName: user.fullName, token },
       });
     } catch (error) {
       if (error instanceof ZodError) {
         res.status(400).json({
-          message: "خطأ في التحقق من البيانات",
+          message: "Validation error",
+          errors: this.formatValidationError(error),
+        });
+        return;
+      }
+      next(error);
+    }
+  };
+
+  logout = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const token = req.header("Authorization")?.replace("Bearer ", "");
+      if (token) {
+        const decoded: any = jwt.verify(token, process.env.JWT_SECRET!);
+        // await RedisService.del(`session:${decoded.userId}`);
+      }
+      res.json({ message: "Logout successful" });
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  updatePassword = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const { oldPassword, newPassword } = updatePasswordSchema.parse(req.body);
+      const user = await this.userRepo.findById((req as any).user.userId);
+      if (!user || !(await bcrypt.compare(oldPassword, user.password))) {
+        const error = new Error("Invalid old password");
+        (error as any).statusCode = 400;
+        next(error);
+        return;
+      }
+
+      user.password = await bcrypt.hash(newPassword, 10);
+      await user.save();
+
+      res.json({ message: "Password updated successfully" });
+    } catch (error) {
+      if (error instanceof ZodError) {
+        res.status(400).json({
+          message: "Validation error",
+          errors: this.formatValidationError(error),
+        });
+        return;
+      }
+      next(error);
+    }
+  };
+
+  forgetPassword = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const { email } = forgetPasswordSchema.parse(req.body);
+      const user = await this.userRepo.findOne({ email });
+      if (!user) {
+        const error = new Error("User not found");
+        (error as any).statusCode = 404;
+        next(error);
+        return;
+      }
+
+      const resetToken = crypto.randomBytes(32).toString("hex");
+      user.resetPasswordToken = resetToken;
+      user.resetPasswordExpires = new Date(Date.now() + 3600000);
+      await user.save();
+
+      await EmailService.sendEmail(
+        user.email,
+        "Reset your password",
+        `Click here to reset: ${process.env.BASE_URL}/auth/reset-password?token=${resetToken}`
+      );
+
+      res.json({ message: "Password reset email sent" });
+    } catch (error) {
+      if (error instanceof ZodError) {
+        res.status(400).json({
+          message: "Validation error",
+          errors: this.formatValidationError(error),
+        });
+        return;
+      }
+      next(error);
+    }
+  };
+
+  resetPassword = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const { token, newPassword } = resetPasswordSchema.parse(req.body);
+      const user = await this.userRepo.findOne({
+        resetPasswordToken: token,
+        resetPasswordExpires: { $gt: new Date() },
+      });
+      if (!user) {
+        const error = new Error("Invalid or expired token");
+        (error as any).statusCode = 400;
+        next(error);
+        return;
+      }
+
+      user.password = await bcrypt.hash(newPassword, 10);
+      user.resetPasswordToken = undefined;
+      user.resetPasswordExpires = undefined;
+      await user.save();
+
+      res.json({ message: "Password reset successfully" });
+    } catch (error) {
+      if (error instanceof ZodError) {
+        res.status(400).json({
+          message: "Validation error",
           errors: this.formatValidationError(error),
         });
         return;
@@ -71,5 +243,4 @@ class UserService {
   };
 }
 
-// el instance bta3ha 3shan ast5dmha fe el routes
 export default new UserService();

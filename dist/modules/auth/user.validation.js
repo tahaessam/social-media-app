@@ -1,26 +1,25 @@
 import { z } from "zod";
 export const signupSchema = z.object({
-    email: z
-        .string()
-        .email("البريد الإلكتروني غير صحيح")
-        .min(1, "البريد الإلكتروني مطلوب"),
-    password: z
-        .string()
-        .min(6, "كلمة المرور يجب أن تكون 6 أحرف على الأقل")
-        .regex(/[A-Z]/, "كلمة المرور يجب أن تحتوي على حرف كبير")
-        .regex(/[0-9]/, "كلمة المرور يجب أن تحتوي على رقم"),
-    fullName: z
-        .string()
-        .min(2, "الاسم يجب أن يكون حرفين على الأقل")
-        .max(50, "الاسم يجب أن يكون 50 حرف كحد أقصى"),
+    email: z.string().email().min(1),
+    password: z.string().min(6).regex(/[A-Z]/).regex(/[0-9]/),
+    fullName: z.string().min(2).max(50),
 });
 export const loginSchema = z.object({
-    email: z
-        .string()
-        .email("البريد الإلكتروني غير صحيح")
-        .min(1, "البريد الإلكتروني مطلوب"),
-    password: z
-        .string()
-        .min(1, "كلمة المرور مطلوبة"),
+    email: z.string().email().min(1),
+    password: z.string().min(1),
+});
+export const updatePasswordSchema = z.object({
+    oldPassword: z.string().min(1),
+    newPassword: z.string().min(6).regex(/[A-Z]/).regex(/[0-9]/),
+});
+export const forgetPasswordSchema = z.object({
+    email: z.string().email().min(1),
+});
+export const resetPasswordSchema = z.object({
+    token: z.string().min(1),
+    newPassword: z.string().min(6).regex(/[A-Z]/).regex(/[0-9]/),
+});
+export const confirmEmailSchema = z.object({
+    token: z.string().min(1),
 });
 //# sourceMappingURL=user.validation.js.map
