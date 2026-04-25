@@ -2,7 +2,7 @@ import { Router, Request } from "express";
 import UserService from "./user.service";
 import { validateBody } from "../../middlewares/validation";
 import { authenticate, authorize } from "../../middlewares/auth.middleware";
-// import passport from "../../utils/passport.config";
+import passport from "../../utils/passport.config";
 import jwt from "jsonwebtoken";
 
 interface AuthRequest extends Request {
@@ -15,6 +15,9 @@ import {
   forgetPasswordSchema,
   resetPasswordSchema,
   confirmEmailSchema,
+  sendOtpSchema,
+  verifyOtpSchema,
+  resendOtpSchema,
 } from "./user.validation";
 
 const authRouter = Router();
@@ -27,10 +30,16 @@ authRouter.put("/update-password", authenticate, validateBody(updatePasswordSche
 authRouter.post("/forget-password", validateBody(forgetPasswordSchema), UserService.forgetPassword);
 authRouter.post("/reset-password", validateBody(resetPasswordSchema), UserService.resetPassword);
 
-// authRouter.get("/google", passport.authenticate("google", { scope: ["profile", "email"] }));
-// authRouter.get("/google/callback", passport.authenticate("google", { failureRedirect: "/login" }), (req: AuthRequest, res) => {
-//   const token = jwt.sign({ userId: (req.user as any)._id }, process.env.JWT_SECRET!, { expiresIn: "7d" });
-//   res.redirect(`${process.env.FRONTEND_URL}/?token=${token}`);
-// });
+// OTP routes
+authRouter.post("/send-otp", validateBody(sendOtpSchema), UserService.sendOtp);
+authRouter.post("/verify-otp", validateBody(verifyOtpSchema), UserService.verifyOtp);
+authRouter.post("/resend-otp", validateBody(resendOtpSchema), UserService.resendOtp);
+
+// Google OAuth routes
+authRouter.get("/google", passport.authenticate("google", { scope: ["profile", "email"] }));
+authRouter.get("/google/callback", passport.authenticate("google", { failureRedirect: "/login" }), (req: AuthRequest, res) => {
+  const token = jwt.sign({ userId: (req.user as any)._id }, process.env.JWT_SECRET!, { expiresIn: "7d" });
+  res.redirect(`${process.env.FRONTEND_URL}/?token=${token}`);
+});
 
 export default authRouter;

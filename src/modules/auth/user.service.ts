@@ -13,6 +13,9 @@ import {
   forgetPasswordSchema,
   resetPasswordSchema,
   confirmEmailSchema,
+  sendOtpSchema,
+  verifyOtpSchema,
+  resendOtpSchema,
 } from "./user.validation";
 
 class UserService {
@@ -230,6 +233,128 @@ class UserService {
       await user.save();
 
       res.json({ message: "Password reset successfully" });
+    } catch (error) {
+      if (error instanceof ZodError) {
+        res.status(400).json({
+          message: "Validation error",
+          errors: this.formatValidationError(error),
+        });
+        return;
+      }
+      next(error);
+    }
+  };
+
+  private generateOtp(): string {
+    return Math.floor(100000 + Math.random() * 900000).toString();
+  }
+
+  sendOtp = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const { email } = sendOtpSchema.parse(req.body);
+      const user = await this.userRepo.findOne({ email });
+      if (!user) {
+        const error = new Error("User not found");
+        (error as any).statusCode = 404;
+        next(error);
+        return;
+      }
+
+      const otp = this.generateOtp();
+      user.otp = otp;
+      user.otpExpires = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+      await user.save();
+
+      await EmailService.sendEmail(
+        user.email,
+        "Your OTP Code",
+        `Your OTP code is: ${otp}\n\nThis code will expire in 10 minutes.`
+      );
+
+      res.json({ message: "OTP sent successfully to your email" });
+    } catch (error) {
+      if (error instanceof ZodError) {
+        res.status(400).json({
+          message: "Validation error",
+          errors: this.formatValidationError(error),
+        });
+        return;
+      }
+      next(error);
+    }
+  };
+
+  verifyOtp = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const { email, otp } = verifyOtpSchema.parse(req.body);
+      const user = await this.userRepo.findOne({ email });
+      if (!user) {
+        const error = new Error("User not found");
+        (error as any).statusCode = 404;
+        next(error);
+        return;
+      }
+
+      if (!user.otp || user.otp !== otp) {
+        const error = new Error("Invalid OTP");
+        (error as any).statusCode = 400;
+        next(error);
+        return;
+      }
+
+      if (!user.otpExpires || user.otpExpires < new Date()) {
+        const error = new Error("OTP has expired");
+        (error as any).statusCode = 400;
+        next(error);
+        return;
+      }
+
+      user.otp = undefined;
+      user.otpExpires = undefined;
+      user.isVerified = true;
+      await user.save();
+
+      const token = this.generateToken(user._id.toString());
+
+      res.json({
+        message: "OTP verified successfully",
+        data: { email: user.email, fullName: user.fullName, token },
+      });
+    } catch (error) {
+      if (error instanceof ZodError) {
+        res.status(400).json({
+          message: "Validation error",
+          errors: this.formatValidationError(error),
+        });
+        return;
+      }
+      next(error);
+    }
+  };
+
+  resendOtp = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const { email } = resendOtpSchema.parse(req.body);
+      const user = await this.userRepo.findOne({ email });
+      if (!user) {
+        const error = new Error("User not found");
+        (error as any).statusCode = 404;
+        next(error);
+        return;
+      }
+
+      const otp = this.generateOtp();
+      user.otp = otp;
+      user.otpExpires = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+      await user.save();
+
+      await EmailService.sendEmail(
+        user.email,
+        "Your OTP Code (Resend)",
+        `Your new OTP code is: ${otp}\n\nThis code will expire in 10 minutes.`
+      );
+
+      res.json({ message: "OTP resent successfully to your email" });
     } catch (error) {
       if (error instanceof ZodError) {
         res.status(400).json({

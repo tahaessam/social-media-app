@@ -29,9 +29,25 @@ export const confirmEmailSchema = z.object({
   token: z.string().min(1),
 });
 
+export const sendOtpSchema = z.object({
+  email: z.string().email().min(1),
+});
+
+export const verifyOtpSchema = z.object({
+  email: z.string().email().min(1),
+  otp: z.string().min(6).max(6).regex(/^[0-9]+$/),
+});
+
+export const resendOtpSchema = z.object({
+  email: z.string().email().min(1),
+});
+
 export type SignupInput = z.infer<typeof signupSchema>;
 export type LoginInput = z.infer<typeof loginSchema>;
 export type UpdatePasswordInput = z.infer<typeof updatePasswordSchema>;
 export type ForgetPasswordInput = z.infer<typeof forgetPasswordSchema>;
 export type ResetPasswordInput = z.infer<typeof resetPasswordSchema>;
 export type ConfirmEmailInput = z.infer<typeof confirmEmailSchema>;
+export type SendOtpInput = z.infer<typeof sendOtpSchema>;
+export type VerifyOtpInput = z.infer<typeof verifyOtpSchema>;
+export type ResendOtpInput = z.infer<typeof resendOtpSchema>;
