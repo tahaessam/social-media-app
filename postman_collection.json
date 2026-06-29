@@ -1,0 +1,615 @@
+{
+  "info": {
+    "name": "Social Media App API",
+    "description": "Postman collection for the currently implemented endpoints in social_media-app",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3001"
+    },
+    {
+      "key": "token",
+      "value": ""
+    },
+    {
+      "key": "postId",
+      "value": ""
+    },
+    {
+      "key": "email",
+      "value": "test.user@example.com"
+    },
+    {
+      "key": "password",
+      "value": "StrongPass123"
+    },
+    {
+      "key": "fullName",
+      "value": "Test User"
+    },
+    {
+      "key": "verificationToken",
+      "value": ""
+    },
+    {
+      "key": "resetToken",
+      "value": ""
+    },
+    {
+      "key": "newPassword",
+      "value": "NewPass123"
+    },
+    {
+      "key": "otp",
+      "value": ""
+    }
+  ],
+  "item": [
+    {
+      "name": "Health & Basic Routes",
+      "item": [
+        {
+          "name": "GET /ping",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/ping",
+              "host": ["{{baseUrl}}"],
+              "path": ["ping"]
+            }
+          }
+        },
+        {
+          "name": "GET /",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/",
+              "host": ["{{baseUrl}}"],
+              "path": []
+            }
+          }
+        },
+        {
+          "name": "GET /test-error",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/test-error",
+              "host": ["{{baseUrl}}"],
+              "path": ["test-error"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Authentication",
+      "item": [
+        {
+          "name": "POST /auth/signup",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{email}}\",\n  \"password\": \"{{password}}\",\n  \"fullName\": \"{{fullName}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/signup",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "signup"]
+            }
+          }
+        },
+        {
+          "name": "POST /auth/confirm-email",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"token\": \"{{verificationToken}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/confirm-email",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "confirm-email"]
+            }
+          }
+        },
+        {
+          "name": "POST /auth/login",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{email}}\",\n  \"password\": \"{{password}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "login"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('stores token on successful login', function () {",
+                  "  const responseJson = pm.response.json();",
+                  "  if (responseJson && responseJson.data && responseJson.data.token) {",
+                  "    pm.collectionVariables.set('token', responseJson.data.token);",
+                  "  }",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST /auth/logout",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/logout",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "logout"]
+            }
+          }
+        },
+        {
+          "name": "PUT /auth/update-password",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"oldPassword\": \"{{password}}\",\n  \"newPassword\": \"{{newPassword}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/update-password",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "update-password"]
+            }
+          }
+        },
+        {
+          "name": "POST /auth/forget-password",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{email}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/forget-password",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "forget-password"]
+            }
+          }
+        },
+        {
+          "name": "POST /auth/reset-password",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"token\": \"{{resetToken}}\",\n  \"newPassword\": \"{{newPassword}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/reset-password",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "reset-password"]
+            }
+          }
+        },
+        {
+          "name": "POST /auth/send-otp",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{email}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/send-otp",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "send-otp"]
+            }
+          }
+        },
+        {
+          "name": "POST /auth/verify-otp",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{email}}\",\n  \"otp\": \"{{otp}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/verify-otp",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "verify-otp"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('stores token after OTP verification', function () {",
+                  "  const responseJson = pm.response.json();",
+                  "  if (responseJson && responseJson.data && responseJson.data.token) {",
+                  "    pm.collectionVariables.set('token', responseJson.data.token);",
+                  "  }",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST /auth/resend-otp",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{email}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/resend-otp",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "resend-otp"]
+            }
+          }
+        },
+        {
+          "name": "GET /auth/google",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/auth/google",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "google"]
+            }
+          }
+        },
+        {
+          "name": "GET /auth/google/callback",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/auth/google/callback",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "google", "callback"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Posts",
+      "item": [
+        {
+          "name": "POST /posts",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Hello World\",\n  \"content\": \"This is a new post.\",\n  \"attachments\": [\"https://example.com/image.jpg\"]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/posts",
+              "host": ["{{baseUrl}}"],
+              "path": ["posts"]
+            }
+          }
+        },
+        {
+          "name": "GET /posts",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/posts",
+              "host": ["{{baseUrl}}"],
+              "path": ["posts"]
+            }
+          }
+        },
+        {
+          "name": "GET /posts/:id",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/posts/{{postId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["posts", "{{postId}}"]
+            }
+          }
+        },
+        {
+          "name": "PUT /posts/:id",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"content\": \"Updated post content.\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/posts/{{postId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["posts", "{{postId}}"]
+            }
+          }
+        },
+        {
+          "name": "DELETE /posts/:id",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/posts/{{postId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["posts", "{{postId}}"]
+            }
+          }
+        },
+        {
+          "name": "POST /posts/:id/reactions",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reactionType\": \"like\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/posts/{{postId}}/reactions",
+              "host": ["{{baseUrl}}"],
+              "path": ["posts", "{{postId}}", "reactions"]
+            }
+          }
+        },
+        {
+          "name": "GET /posts/:id/reactions",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/posts/{{postId}}/reactions",
+              "host": ["{{baseUrl}}"],
+              "path": ["posts", "{{postId}}", "reactions"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Comments",
+      "item": [
+        {
+          "name": "POST /comments",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"postId\": \"{{postId}}\",\n  \"content\": \"This is a comment.\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/comments",
+              "host": ["{{baseUrl}}"],
+              "path": ["comments"]
+            }
+          }
+        },
+        {
+          "name": "GET /comments?postId={{postId}}&page=1&limit=10",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/comments?postId={{postId}}&page=1&limit=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["comments"],
+              "query": [
+                { "key": "postId", "value": "{{postId}}" },
+                { "key": "page", "value": "1" },
+                { "key": "limit", "value": "10" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "PUT /comments/:id",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"content\": \"Updated comment text.\"\n}" },
+            "url": {
+              "raw": "{{baseUrl}}/comments/{{commentId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["comments", "{{commentId}}"]
+            }
+          }
+        },
+        {
+          "name": "DELETE /comments/:id",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/comments/{{commentId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["comments", "{{commentId}}"]
+            }
+          }
+        },
+        {
+          "name": "POST /comments/:id/reactions",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"reactionType\": \"like\"\n}" },
+            "url": {
+              "raw": "{{baseUrl}}/comments/{{commentId}}/reactions",
+              "host": ["{{baseUrl}}"],
+              "path": ["comments", "{{commentId}}", "reactions"]
+            }
+          }
+        },
+        {
+          "name": "DELETE /comments/:id/reactions",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/comments/{{commentId}}/reactions",
+              "host": ["{{baseUrl}}"],
+              "path": ["comments", "{{commentId}}", "reactions"]
+            }
+          }
+        },
+        {
+          "name": "GET /comments/:id/reactions",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/comments/{{commentId}}/reactions",
+              "host": ["{{baseUrl}}"],
+              "path": ["comments", "{{commentId}}", "reactions"]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

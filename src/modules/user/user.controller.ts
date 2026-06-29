@@ -1,8 +1,8 @@
 import { Router, Request } from "express";
-import UserService from "./user.service";
-import { validateBody } from "../../middlewares/validation";
-import { authenticate, authorize } from "../../middlewares/auth.middleware";
-import passport from "../../utils/passport.config";
+import UserService from "./user.service.js";
+import { validateBody } from "../../shared/middlewares/validation.js";
+import { authenticate, authorize } from "../../shared/middlewares/auth.middleware.js";
+import passport from "../../shared/utils/passport.config.js";
 import jwt from "jsonwebtoken";
 
 interface AuthRequest extends Request {
@@ -18,7 +18,7 @@ import {
   sendOtpSchema,
   verifyOtpSchema,
   resendOtpSchema,
-} from "./user.validation";
+} from "./user.validation.js";
 
 const authRouter = Router();
 

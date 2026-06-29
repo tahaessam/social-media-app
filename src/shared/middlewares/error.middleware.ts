@@ -9,11 +9,11 @@ export const errorMiddleware = (
 ) => {
   Logger.error("Unhandled error occurred", err);
 
-  // Don't leak error details in production
+  const statusCode = (err as any).statusCode || (err as any).status || 500;
   const isDevelopment = process.env.NODE_ENV === "development";
 
-  res.status(500).json({
-    message: "Internal Server Error",
+  res.status(statusCode).json({
+    message: err.message || "Internal Server Error",
     ...(isDevelopment && {
       error: err.message,
       stack: err.stack,

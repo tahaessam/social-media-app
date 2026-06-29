@@ -1,6 +1,6 @@
-import mongoose, { Document, Schema } from "mongoose";
+import mongoose, { Schema } from "mongoose";
 
-export interface IUser extends Document {
+export interface IUser {
   email: string;
   password: string;
   fullName: string;
@@ -38,15 +38,27 @@ const userSchema = new Schema<IUser>(
       type: Boolean,
       default: false,
     },
-    verificationToken: String,
-    otp: String,
-    otpExpires: Date,
-    resetPasswordToken: String,
-    resetPasswordExpires: Date,
-    googleId: String,
+    verificationToken: {
+      type: String,
+    },
+    otp: {
+      type: String,
+    },
+    otpExpires: {
+      type: Date,
+    },
+    resetPasswordToken: {
+      type: String,
+    },
+    resetPasswordExpires: {
+      type: Date,
+    },
+    googleId: {
+      type: String,
+    },
     role: {
       type: String,
-      default: 'user',
+      default: "user",
     },
   },
   {

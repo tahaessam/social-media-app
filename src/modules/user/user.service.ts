@@ -3,9 +3,9 @@ import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import crypto from "crypto";
 import { ZodError } from "zod";
-import UserRepo from "./user.repo";
-import EmailService from "../../utils/email.service";
-import RedisService from "../../utils/redis.service";
+import UserRepo from "../../repo/user.repo.js";
+import EmailService from "../../shared/utils/email.service.js";
+import RedisService from "../../shared/utils/redis.service.js";
 import {
   signupSchema,
   loginSchema,
@@ -16,7 +16,7 @@ import {
   sendOtpSchema,
   verifyOtpSchema,
   resendOtpSchema,
-} from "./user.validation";
+} from "./user.validation.js";
 
 class UserService {
   private userRepo: UserRepo;
@@ -86,7 +86,7 @@ class UserService {
       }
 
       user.isVerified = true;
-      user.verificationToken = undefined;
+      delete user.verificationToken;
       await user.save();
 
       res.json({ message: "Email verified successfully" });
@@ -228,8 +228,8 @@ class UserService {
       }
 
       user.password = await bcrypt.hash(newPassword, 10);
-      user.resetPasswordToken = undefined;
-      user.resetPasswordExpires = undefined;
+      delete user.resetPasswordToken;
+      delete user.resetPasswordExpires;
       await user.save();
 
       res.json({ message: "Password reset successfully" });
@@ -309,8 +309,8 @@ class UserService {
         return;
       }
 
-      user.otp = undefined;
-      user.otpExpires = undefined;
+      delete user.otp;
+      delete user.otpExpires;
       user.isVerified = true;
       await user.save();
 

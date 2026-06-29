@@ -7,7 +7,7 @@ const __dirname = dirname(__filename);
 
 config({ path: resolve(__dirname, "../../.env") });
 
-export const PORT = process.env.PORT || 3000;
+export const PORT = process.env.PORT || 3002;
 export const MONGO_URI = process.env.MONGO_URI || "mongodb://localhost:27017/social_media_app";
 
 

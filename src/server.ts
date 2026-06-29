@@ -1,7 +1,7 @@
 import app from "./app.js";
 import { PORT } from "./config/config.service.js";
-import { Logger } from "./utils/logger.util.js";
-import { connectDB } from "./DB/connectionDB.js";
+import { Logger } from "./shared/utils/logger.util.js";
+import { connectDB } from "./shared/db/connection.js";
 
 const startServer = async () => {
   try {
