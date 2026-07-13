@@ -1,0 +1,43 @@
+[query {
+  user {
+    displayName
+    email
+    id
+  }
+}
+mutation {
+  updateUser(input: { displayName: "New Name" }) {
+    user {
+      displayName
+      email
+      id
+    }
+  }
+}
+mutation {
+  deleteUser(id: "user-id") {
+    success
+    message
+  }
+  product {
+    id
+    name
+    price
+  }
+}
+mutation {
+  addproduct(input: { name: "New Product", price: 19.99 }) {
+    product {
+      id
+      name
+      price
+    }
+  }
+}
+subscription {
+  productAdded {
+    id
+    name
+    price
+  }
+}]
